@@ -255,6 +255,46 @@ function SearchResults({ query }) {
   );
 }
 
+const sectionPhotos = [
+  null,
+  null,
+  { src: "/images/favorites/lomo-saltado.jpg", alt: "Lomo saltado de El Piombino" },
+  null,
+  { src: "/images/favorites/sandwich.jpg", alt: "Sandwich artesanal" },
+  null,
+  { src: "/images/favorites/cafe.jpg", alt: "Cafe de especialidad" },
+  null,
+  { src: "/images/favorites/croissant.jpg", alt: "Croissant recien horneado" },
+  null,
+  { src: "/images/favorites/cheesecake.jpg", alt: "Cheesecake de El Piombino" },
+  null,
+];
+
+function PhotoBreak({ photo }) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-80px" });
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0 }}
+      animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+      transition={{ duration: 0.8 }}
+      className="relative h-48 md:h-64 lg:h-80 overflow-hidden"
+    >
+      <motion.img
+        src={photo.src}
+        alt={photo.alt}
+        initial={{ scale: 1.1 }}
+        animate={isInView ? { scale: 1 } : { scale: 1.1 }}
+        transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+      <div className="absolute inset-0 bg-brown/20" />
+    </motion.div>
+  );
+}
+
 function SectionDivider() {
   return (
     <div className="flex items-center justify-center gap-3 py-2">
@@ -364,7 +404,7 @@ export default function Carta() {
         ) : (
           menuCategories.map((category, i) => (
             <div key={category.id}>
-              {i > 0 && <SectionDivider />}
+              {i > 0 && (sectionPhotos[i] ? <PhotoBreak photo={sectionPhotos[i]} /> : <SectionDivider />)}
               <CategorySection category={category} index={i} />
             </div>
           ))
