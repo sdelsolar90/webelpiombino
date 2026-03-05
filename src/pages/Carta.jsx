@@ -1,6 +1,7 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, useInView, AnimatePresence } from "motion/react";
 import { menuCategories } from "../data/menu";
+import { menuImages } from "../data/menuImages";
 
 const categoryIcons = {
   desayunos: (
@@ -96,13 +97,21 @@ function CategoryGrid({ onSelect }) {
   );
 }
 
-function MenuItem({ item, index, altCard }) {
+function MenuItem({ item, index, altCard, onShowPhoto }) {
+  const hasPhoto = !!menuImages[item.name];
+
   return (
     <div
-      className={`group rounded-xl border border-line/30 px-4 py-3.5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 animate-fade-up ${altCard ? "bg-beige" : "bg-cream"}`}
+      className={`group rounded-xl border border-line/30 px-4 py-3.5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 animate-fade-up ${altCard ? "bg-beige" : "bg-cream"} ${hasPhoto ? "cursor-pointer" : ""}`}
       style={{ animationDelay: `${Math.min(index * 40, 400)}ms` }}
+      onClick={hasPhoto ? () => onShowPhoto(item) : undefined}
     >
       <div className="flex items-baseline gap-2">
+        {hasPhoto && (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-blue/40 shrink-0 translate-y-[1px]">
+            <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" />
+          </svg>
+        )}
         <span className="font-body text-sm font-semibold text-brown shrink-0">
           {item.name}
         </span>
@@ -120,7 +129,76 @@ function MenuItem({ item, index, altCard }) {
   );
 }
 
-function CategorySection({ category, index }) {
+function PhotoModal({ item, onClose }) {
+  useEffect(() => {
+    const handleKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handleKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brown/80 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+        className="relative bg-cream rounded-2xl overflow-hidden shadow-2xl max-w-sm w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="relative aspect-square">
+          <img
+            src={menuImages[item.name]}
+            alt={item.name}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-brown/60 via-transparent to-transparent" />
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-brown/40 backdrop-blur-sm text-white flex items-center justify-center hover:bg-brown/60 transition-colors"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+          <div className="absolute bottom-0 left-0 right-0 p-5">
+            <h3 className="font-heading text-xl text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]">
+              {item.name}
+            </h3>
+            {item.description && (
+              <p className="font-body text-sm text-cream/70 mt-1">{item.description}</p>
+            )}
+          </div>
+        </div>
+        <div className="px-5 py-4 flex items-center justify-between">
+          <span className="font-body text-lg font-bold text-blue tabular-nums">
+            S/{item.price.toFixed(2)}
+          </span>
+          <a
+            href="#pide-aqui"
+            onClick={onClose}
+            className="bg-blue text-white font-body text-xs font-semibold uppercase tracking-wider px-5 py-2 rounded-full hover:bg-blue/90 transition-colors"
+          >
+            Pedir
+          </a>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function CategorySection({ category, index, onShowPhoto }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-60px" });
   const isEven = index % 2 === 0;
@@ -173,7 +251,7 @@ function CategorySection({ category, index }) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {sub.items.map((item, i) => (
-                  <MenuItem key={item.name} item={item} index={i} altCard={!isEven} />
+                  <MenuItem key={item.name} item={item} index={i} altCard={!isEven} onShowPhoto={onShowPhoto} />
                 ))}
               </div>
             </div>
@@ -184,7 +262,7 @@ function CategorySection({ category, index }) {
   );
 }
 
-function SearchResults({ query }) {
+function SearchResults({ query, onShowPhoto }) {
   const normalized = query.toLowerCase().trim();
   const results = [];
 
@@ -228,10 +306,16 @@ function SearchResults({ query }) {
         {results.map((item, i) => (
           <div
             key={`${item.category}-${item.name}-${i}`}
-            className="group bg-cream rounded-xl border border-line/30 px-4 py-3.5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 animate-fade-up"
+            className={`group bg-cream rounded-xl border border-line/30 px-4 py-3.5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 animate-fade-up ${menuImages[item.name] ? "cursor-pointer" : ""}`}
             style={{ animationDelay: `${Math.min(i * 30, 300)}ms` }}
+            onClick={menuImages[item.name] ? () => onShowPhoto(item) : undefined}
           >
             <div className="flex items-baseline gap-2">
+              {menuImages[item.name] && (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-blue/40 shrink-0 translate-y-[1px]">
+                  <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" />
+                </svg>
+              )}
               <span className="font-body text-sm font-semibold text-brown shrink-0">
                 {item.name}
               </span>
@@ -264,7 +348,7 @@ const sectionPhotos = [
   null,
   { src: "/images/favorites/cafe.jpg", alt: "Cafe de especialidad" },
   null,
-  { src: "/images/favorites/croissant.jpg", alt: "Croissant recien horneado" },
+  { src: "/images/favorites/tiramisu.jpg", alt: "Tiramisu de El Piombino" },
   null,
   { src: "/images/favorites/cheesecake.jpg", alt: "Cheesecake de El Piombino" },
   null,
@@ -307,6 +391,7 @@ function SectionDivider() {
 
 export default function Carta() {
   const [search, setSearch] = useState("");
+  const [photoItem, setPhotoItem] = useState(null);
 
   const scrollToCategory = useCallback((id) => {
     const el = document.getElementById(id);
@@ -398,14 +483,14 @@ export default function Carta() {
         {isSearching ? (
           <section className="bg-beige py-12 lg:py-16">
             <div className="max-w-5xl mx-auto px-4">
-              <SearchResults query={search} />
+              <SearchResults query={search} onShowPhoto={setPhotoItem} />
             </div>
           </section>
         ) : (
           menuCategories.map((category, i) => (
             <div key={category.id}>
               {i > 0 && (sectionPhotos[i] ? <PhotoBreak photo={sectionPhotos[i]} /> : <SectionDivider />)}
-              <CategorySection category={category} index={i} />
+              <CategorySection category={category} index={i} onShowPhoto={setPhotoItem} />
             </div>
           ))
         )}
@@ -425,6 +510,12 @@ export default function Carta() {
           </div>
         </section>
       </div>
+
+      <AnimatePresence>
+        {photoItem && (
+          <PhotoModal item={photoItem} onClose={() => setPhotoItem(null)} />
+        )}
+      </AnimatePresence>
     </>
   );
 }

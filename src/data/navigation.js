@@ -39,7 +39,7 @@ export const socialLinks = [
   },
   {
     label: "Rappi",
-    url: "https://www.rappi.com.pe/restaurantes/el-piombino",
+    url: "https://www.rappi.com.pe/restaurantes/delivery/10826-el-piombino?utm_source=app&utm_medium=deeplink&utm_campaign=share",
     icon: "rappi",
   },
 ];
